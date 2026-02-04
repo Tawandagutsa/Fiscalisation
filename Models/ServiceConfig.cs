@@ -12,10 +12,18 @@ public sealed class ServiceConfig
     public string StatusColumn { get; set; } = "FiscalisationStatus";
     public string PendingStatusValue { get; set; } = "PENDING";
     public string TimeoutStatusValue { get; set; } = "TIMEOUT";
+    public string InProgressStatusValue { get; set; } = "IN_PROGRESS";
+    public string FailedStatusValue { get; set; } = "FAILED";
     public string ToFiscaliseColumn { get; set; } = "ToFiscalise";
     public string ToFiscaliseValue { get; set; } = "Yes";
     public int PollIntervalSeconds { get; set; } = 30;
     public int BatchSize { get; set; } = 50;
+    public int MaxRetries { get; set; } = 5;
+    public int RetryBackoffBaseSeconds { get; set; } = 10;
+    public int RetryBackoffMaxSeconds { get; set; } = 300;
+    public string RetryCountColumn { get; set; } = "RetryCount";
+    public string LastAttemptAtColumn { get; set; } = "LastAttemptAt";
+    public string LastSuccessAtColumn { get; set; } = "LastSuccessAt";
 
     public int ReceiptType { get; set; } = 0;
     public string DeviceId { get; set; } = "17436";
@@ -39,7 +47,10 @@ public sealed class ServiceConfig
 
         var statusFilter = $"([{StatusColumn}] = '{PendingStatusValue}' OR [{StatusColumn}] = '{TimeoutStatusValue}')";
         var fiscaliseFilter = $"[{ToFiscaliseColumn}] = '{ToFiscaliseValue}'";
-        return $"{statusFilter} AND {fiscaliseFilter}";
+        var retryFilter = string.IsNullOrWhiteSpace(RetryCountColumn)
+            ? ""
+            : $" AND ([{RetryCountColumn}] IS NULL OR [{RetryCountColumn}] < {MaxRetries})";
+        return $"{statusFilter} AND {fiscaliseFilter}{retryFilter}";
     }
 
     public static ServiceConfig FromForm(IFormCollection form, ServiceConfig fallback)
@@ -53,10 +64,18 @@ public sealed class ServiceConfig
         config.StatusColumn = FormValue(form, "StatusColumn", config.StatusColumn);
         config.PendingStatusValue = FormValue(form, "PendingStatusValue", config.PendingStatusValue);
         config.TimeoutStatusValue = FormValue(form, "TimeoutStatusValue", config.TimeoutStatusValue);
+        config.InProgressStatusValue = FormValue(form, "InProgressStatusValue", config.InProgressStatusValue);
+        config.FailedStatusValue = FormValue(form, "FailedStatusValue", config.FailedStatusValue);
         config.ToFiscaliseColumn = FormValue(form, "ToFiscaliseColumn", config.ToFiscaliseColumn);
         config.ToFiscaliseValue = FormValue(form, "ToFiscaliseValue", config.ToFiscaliseValue);
         config.PollIntervalSeconds = FormInt(form, "PollIntervalSeconds", config.PollIntervalSeconds);
         config.BatchSize = FormInt(form, "BatchSize", config.BatchSize);
+        config.MaxRetries = FormInt(form, "MaxRetries", config.MaxRetries);
+        config.RetryBackoffBaseSeconds = FormInt(form, "RetryBackoffBaseSeconds", config.RetryBackoffBaseSeconds);
+        config.RetryBackoffMaxSeconds = FormInt(form, "RetryBackoffMaxSeconds", config.RetryBackoffMaxSeconds);
+        config.RetryCountColumn = FormValue(form, "RetryCountColumn", config.RetryCountColumn);
+        config.LastAttemptAtColumn = FormValue(form, "LastAttemptAtColumn", config.LastAttemptAtColumn);
+        config.LastSuccessAtColumn = FormValue(form, "LastSuccessAtColumn", config.LastSuccessAtColumn);
 
         config.ReceiptType = FormInt(form, "ReceiptType", config.ReceiptType);
         config.DeviceId = FormValue(form, "DeviceId", config.DeviceId);
@@ -122,10 +141,18 @@ public sealed class ServiceConfig
             StatusColumn = StatusColumn,
             PendingStatusValue = PendingStatusValue,
             TimeoutStatusValue = TimeoutStatusValue,
+            InProgressStatusValue = InProgressStatusValue,
+            FailedStatusValue = FailedStatusValue,
             ToFiscaliseColumn = ToFiscaliseColumn,
             ToFiscaliseValue = ToFiscaliseValue,
             PollIntervalSeconds = PollIntervalSeconds,
             BatchSize = BatchSize,
+            MaxRetries = MaxRetries,
+            RetryBackoffBaseSeconds = RetryBackoffBaseSeconds,
+            RetryBackoffMaxSeconds = RetryBackoffMaxSeconds,
+            RetryCountColumn = RetryCountColumn,
+            LastAttemptAtColumn = LastAttemptAtColumn,
+            LastSuccessAtColumn = LastSuccessAtColumn,
             ReceiptType = ReceiptType,
             DeviceId = DeviceId,
             UsdPlatformValue = UsdPlatformValue,

@@ -5,10 +5,19 @@
   "whereClause": "",
   "statusColumn": "FiscalisationStatus",
   "pendingStatusValue": "PENDING",
+  "timeoutStatusValue": "TIMEOUT",
+  "inProgressStatusValue": "IN_PROGRESS",
+  "failedStatusValue": "FAILED",
   "toFiscaliseColumn": "ToFiscalise",
   "toFiscaliseValue": "Yes",
   "pollIntervalSeconds": 30,
   "batchSize": 50,
+  "maxRetries": 5,
+  "retryBackoffBaseSeconds": 10,
+  "retryBackoffMaxSeconds": 300,
+  "retryCountColumn": "RetryCount",
+  "lastAttemptAtColumn": "LastAttemptAt",
+  "lastSuccessAtColumn": "LastSuccessAt",
   "receiptType": 0,
   "deviceId": "17436",
   "usdPlatformValue": "VFEX",
@@ -45,7 +54,9 @@
     "fiscalisationStatus": "FiscalisationStatus",
     "dReceiptNumber": "dreceiptNumber",
     "invoiceDate": "invoiceDate",
-    "deviceId": "deviceID"
+    "deviceId": "deviceID",
+    "errorMessage": "FiscalisationError",
+    "fullResponse": "FiscalisationResponse"
   },
   "emailSettings": {
     "enabled": false,
@@ -56,6 +67,7 @@
     "smtpPassword": "",
     "fromAddress": "",
     "toAddresses": "",
+    "clientName": "",
     "subject": "Fiscalisation API timeout",
     "timeoutSeconds": 15,
     "throttleMinutes": 15

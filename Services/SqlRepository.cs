@@ -55,6 +55,8 @@ public sealed class SqlRepository
         AddUpdate(updates, config.ResponseColumns.DeviceId, response.DeviceId);
         AddUpdate(updates, config.ResponseColumns.ErrorMessage, null);
         AddUpdate(updates, config.ResponseColumns.FullResponse, rawResponse);
+        AddUpdate(updates, config.LastSuccessAtColumn, DateTimeOffset.UtcNow);
+        AddUpdate(updates, config.RetryCountColumn, 0);
 
         if (updates.Count == 0)
         {
@@ -100,6 +102,8 @@ public sealed class SqlRepository
             updates.Add((config.ResponseColumns.FullResponse, rawResponse));
         }
 
+        AddUpdate(updates, config.LastAttemptAtColumn, DateTimeOffset.UtcNow);
+
         var setClause = string.Join(", ", updates.Select((u, index) => $"[{u.Column}] = @p{index}"));
         var sql = $"UPDATE {config.TableName} SET {setClause} WHERE [ID] = @id";
 
@@ -131,6 +135,73 @@ public sealed class SqlRepository
         await using var command = new SqlCommand(sql, connection);
         command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
         command.Parameters.AddWithValue("@status", config.TimeoutStatusValue);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task MarkInProgressAsync(ServiceConfig config, int id, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(config.ConnectionString) || string.IsNullOrWhiteSpace(config.StatusColumn))
+        {
+            return;
+        }
+
+        var updates = new List<(string Column, object? Value)>
+        {
+            (config.StatusColumn, config.InProgressStatusValue)
+        };
+
+        AddUpdate(updates, config.LastAttemptAtColumn, DateTimeOffset.UtcNow);
+
+        var setClause = string.Join(", ", updates.Select((u, index) => $"[{u.Column}] = @p{index}"));
+        var sql = $"UPDATE {config.TableName} SET {setClause} WHERE [ID] = @id";
+
+        await using var connection = new SqlConnection(config.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
+        for (var i = 0; i < updates.Count; i++)
+        {
+            command.Parameters.AddWithValue($"@p{i}", updates[i].Value ?? DBNull.Value);
+        }
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task IncrementRetryAsync(ServiceConfig config, int id, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(config.ConnectionString) || string.IsNullOrWhiteSpace(config.RetryCountColumn))
+        {
+            return;
+        }
+
+        var sql = $"UPDATE {config.TableName} SET [{config.RetryCountColumn}] = ISNULL([{config.RetryCountColumn}], 0) + 1 WHERE [ID] = @id";
+
+        await using var connection = new SqlConnection(config.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task UpdateStatusAsync(ServiceConfig config, int id, string status, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(config.ConnectionString) || string.IsNullOrWhiteSpace(config.StatusColumn))
+        {
+            return;
+        }
+
+        var sql = $"UPDATE {config.TableName} SET [{config.StatusColumn}] = @status WHERE [ID] = @id";
+
+        await using var connection = new SqlConnection(config.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
+        command.Parameters.AddWithValue("@status", status);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }

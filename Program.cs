@@ -9,14 +9,16 @@ builder.Services.AddSingleton<ConfigStore>();
 builder.Services.AddSingleton<SqlRepository>();
 builder.Services.AddSingleton<ConfigPageRenderer>();
 builder.Services.AddSingleton<EmailNotifier>();
+builder.Services.AddSingleton<ServiceStats>();
 builder.Services.AddHttpClient<FiscalApiClient>();
 builder.Services.AddHostedService<FiscalWorker>();
 
 var app = builder.Build();
 
-app.MapGet("/", (ConfigStore store) =>
+app.MapGet("/", (ConfigStore store, ServiceStats stats) =>
 {
     var config = store.Current;
+    var snapshot = stats.Snapshot();
     var html = $$"""
 <!doctype html>
 <html lang="en">
@@ -36,12 +38,40 @@ app.MapGet("/", (ConfigStore store) =>
     <p>Table: <strong>{{System.Net.WebUtility.HtmlEncode(config.TableName)}}</strong></p>
     <p>API URL: <strong>{{System.Net.WebUtility.HtmlEncode(config.ApiUrl)}}</strong></p>
     <p>Polling every <strong>{{config.PollIntervalSeconds}}</strong> seconds</p>
+    <p>Last batch: <strong>{{snapshot.LastBatchCount}}</strong></p>
+    <p>Last run (UTC): <strong>{{snapshot.LastRunUtc}}</strong></p>
+    <p>Last success (UTC): <strong>{{snapshot.LastSuccessUtc}}</strong></p>
+    <p>Last error (UTC): <strong>{{snapshot.LastErrorUtc}}</strong></p>
+    <p>Last error: <strong>{{System.Net.WebUtility.HtmlEncode(snapshot.LastErrorMessage ?? "")}}</strong></p>
+    <p>Total processed: <strong>{{snapshot.TotalProcessed}}</strong></p>
+    <p>Total success: <strong>{{snapshot.TotalSuccess}}</strong></p>
+    <p>Total timeouts: <strong>{{snapshot.TotalTimeout}}</strong></p>
+    <p>Total failed: <strong>{{snapshot.TotalFailed}}</strong></p>
     <p><a href="/config">Open configuration</a></p>
   </div>
 </body>
 </html>
 """;
     return Results.Content(html, "text/html");
+});
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok", timeUtc = DateTimeOffset.UtcNow }));
+
+app.MapGet("/metrics", (ServiceStats stats) =>
+{
+    var snapshot = stats.Snapshot();
+    var lines = new[]
+    {
+        $"last_run_utc {snapshot.LastRunUtc?.ToUnixTimeSeconds() ?? 0}",
+        $"last_success_utc {snapshot.LastSuccessUtc?.ToUnixTimeSeconds() ?? 0}",
+        $"last_error_utc {snapshot.LastErrorUtc?.ToUnixTimeSeconds() ?? 0}",
+        $"last_batch_count {snapshot.LastBatchCount}",
+        $"total_processed {snapshot.TotalProcessed}",
+        $"total_success {snapshot.TotalSuccess}",
+        $"total_timeouts {snapshot.TotalTimeout}",
+        $"total_failed {snapshot.TotalFailed}"
+    };
+    return Results.Text(string.Join(Environment.NewLine, lines), "text/plain");
 });
 
 app.MapGet("/config", (HttpRequest request, ConfigStore store, ConfigPageRenderer renderer) =>

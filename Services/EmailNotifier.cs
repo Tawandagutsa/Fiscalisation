@@ -99,7 +99,7 @@ public sealed class EmailNotifier
             $"Time (UTC): {DateTimeOffset.UtcNow:O}",
             $"Client: {config.EmailSettings.ClientName}",
             ""
-        };
+        }; 
 
         if (exception is not null)
         {

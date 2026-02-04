@@ -17,6 +17,9 @@ Key settings:
 - `responseColumns.errorMessage`: column to store API failure messages.
 - `responseColumns.fullResponse`: column to store raw API response bodies.
 - `emailSettings`: SMTP settings for timeout alerts.
+- `timeoutStatusValue`, `inProgressStatusValue`, `failedStatusValue`: status values used during processing.
+- `retryCountColumn`, `lastAttemptAtColumn`, `lastSuccessAtColumn`: reliability tracking columns.
+- `maxRetries`, `retryBackoffBaseSeconds`, `retryBackoffMaxSeconds`: timeout retry behavior.
 
 ## Run (dev)
 
@@ -27,6 +30,8 @@ dotnet run --project FiscalisationService.csproj
 Then visit:
 - `http://localhost:5000` (or the URL shown in logs)
 - `http://localhost:5000/config`
+- `http://localhost:5000/health`
+- `http://localhost:5000/metrics`
 
 ## Install as Windows Service
 
@@ -49,3 +54,4 @@ sc.exe start FiscalisationService
 - Only columns listed in `responseColumns` are updated.
 - `config.json` is loaded on startup and after saves from the web UI.
 - Email alerts fire only on API timeouts and are throttled by `throttleMinutes`.
+- `TIMEOUT` records are retried using exponential backoff until `maxRetries` is reached.

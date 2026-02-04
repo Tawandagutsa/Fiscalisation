@@ -9,6 +9,7 @@ public sealed class FiscalWorker : BackgroundService
     private readonly SqlRepository _repository;
     private readonly FiscalApiClient _apiClient;
     private readonly EmailNotifier _emailNotifier;
+    private readonly ServiceStats _stats;
     private readonly ILogger<FiscalWorker> _logger;
 
     public FiscalWorker(
@@ -16,12 +17,14 @@ public sealed class FiscalWorker : BackgroundService
         SqlRepository repository,
         FiscalApiClient apiClient,
         EmailNotifier emailNotifier,
+        ServiceStats stats,
         ILogger<FiscalWorker> logger)
     {
         _configStore = configStore;
         _repository = repository;
         _apiClient = apiClient;
         _emailNotifier = emailNotifier;
+        _stats = stats;
         _logger = logger;
     }
 
@@ -33,6 +36,7 @@ public sealed class FiscalWorker : BackgroundService
             try
             {
                 var records = await _repository.GetPendingAsync(config, stoppingToken);
+                _stats.RecordBatch(records.Count);
                 foreach (var record in records)
                 {
                     if (!TryGetInt(record, "ID", out var id))
@@ -40,28 +44,58 @@ public sealed class FiscalWorker : BackgroundService
                         continue;
                     }
 
+                    var status = GetString(record, config.StatusColumn);
+                    var retryCount = GetInt(record, config.RetryCountColumn);
+                    var lastAttemptAt = GetDateTime(record, config.LastAttemptAtColumn);
+
+                    if (string.Equals(status, config.TimeoutStatusValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (retryCount >= config.MaxRetries)
+                        {
+                            await _repository.UpdateStatusAsync(config, id, config.FailedStatusValue, stoppingToken);
+                            await _repository.UpdateFailureAsync(config, id, "Max retries exceeded.", null, stoppingToken);
+                            _stats.RecordFailure("Max retries exceeded.");
+                            continue;
+                        }
+
+                        var delaySeconds = CalculateBackoffSeconds(config, retryCount);
+                        if (lastAttemptAt.HasValue && DateTimeOffset.UtcNow - lastAttemptAt.Value < TimeSpan.FromSeconds(delaySeconds))
+                        {
+                            continue;
+                        }
+                    }
+
+                    await _repository.MarkInProgressAsync(config, id, stoppingToken);
+
                     var receipt = BuildReceipt(record, config);
+                    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                     var result = await _apiClient.PostReceiptAsync(config.ApiUrl, receipt, config.EmailSettings.TimeoutSeconds, stoppingToken);
+                    stopwatch.Stop();
 
                     if (result.TimedOut)
                     {
-                        _logger.LogWarning("Fiscalisation API timeout for ID {Id}.", id);
+                        _logger.LogWarning("Fiscalisation API timeout for ID {Id}. Took {Elapsed}ms.", id, stopwatch.ElapsedMilliseconds);
                         await _emailNotifier.NotifyTimeoutAsync(config, null, stoppingToken);
                         await _repository.UpdateTimeoutStatusAsync(config, id, stoppingToken);
+                        await _repository.IncrementRetryAsync(config, id, stoppingToken);
                         await _repository.UpdateFailureAsync(config, id, result.ErrorMessage ?? "Timeout", result.RawResponse, stoppingToken);
+                        _stats.RecordTimeout(result.ErrorMessage ?? "Timeout");
                         continue;
                     }
 
                     if (result.Response is null)
                     {
                         var error = result.ErrorMessage ?? "API call failed.";
-                        _logger.LogWarning("Fiscalisation failed for ID {Id}. {Error}", id, error);
+                        _logger.LogWarning("Fiscalisation failed for ID {Id}. {Error}. Took {Elapsed}ms.", id, error, stopwatch.ElapsedMilliseconds);
+                        await _repository.UpdateStatusAsync(config, id, config.FailedStatusValue, stoppingToken);
                         await _repository.UpdateFailureAsync(config, id, error, result.RawResponse, stoppingToken);
+                        _stats.RecordFailure(error);
                         continue;
                     }
 
                     await _repository.UpdateResponseAsync(config, id, result.Response, result.RawResponse, stoppingToken);
-                    _logger.LogInformation("Fiscalised ID {Id} with status {Status}.", id, result.Response.FiscalisationStatus);
+                    _logger.LogInformation("Fiscalised ID {Id} with status {Status}. Took {Elapsed}ms.", id, result.Response.FiscalisationStatus, stopwatch.ElapsedMilliseconds);
+                    _stats.RecordSuccess();
                 }
             }
             catch (Exception ex)
@@ -199,6 +233,58 @@ public sealed class FiscalWorker : BackgroundService
         }
 
         return int.TryParse(raw.ToString(), out value);
+    }
+
+    private static int GetInt(Dictionary<string, object?> record, string column)
+    {
+        if (string.IsNullOrWhiteSpace(column))
+        {
+            return 0;
+        }
+
+        if (!record.TryGetValue(column, out var raw) || raw is null)
+        {
+            return 0;
+        }
+
+        if (raw is int intValue)
+        {
+            return intValue;
+        }
+
+        return int.TryParse(raw.ToString(), out var parsed) ? parsed : 0;
+    }
+
+    private static DateTimeOffset? GetDateTime(Dictionary<string, object?> record, string column)
+    {
+        if (string.IsNullOrWhiteSpace(column))
+        {
+            return null;
+        }
+
+        if (!record.TryGetValue(column, out var raw) || raw is null)
+        {
+            return null;
+        }
+
+        if (raw is DateTimeOffset dto)
+        {
+            return dto;
+        }
+
+        if (raw is DateTime dt)
+        {
+            return new DateTimeOffset(dt);
+        }
+
+        return DateTimeOffset.TryParse(raw.ToString(), out var parsed) ? parsed : null;
+    }
+
+    private static int CalculateBackoffSeconds(ServiceConfig config, int retryCount)
+    {
+        var exponent = Math.Max(0, retryCount - 1);
+        var delay = config.RetryBackoffBaseSeconds * Math.Pow(2, exponent);
+        return (int)Math.Min(Math.Max(1, delay), config.RetryBackoffMaxSeconds);
     }
 
     private static string Trim(string value, int max)

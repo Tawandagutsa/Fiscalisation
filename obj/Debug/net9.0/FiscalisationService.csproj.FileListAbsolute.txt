@@ -69,3 +69,4 @@
 /Users/tawandagutsa/Downloads/Fiscalisation/obj/Debug/net9.0/FiscalisationService.pdb
 /Users/tawandagutsa/Downloads/Fiscalisation/obj/Debug/net9.0/FiscalisationService.genruntimeconfig.cache
 /Users/tawandagutsa/Downloads/Fiscalisation/obj/Debug/net9.0/ref/FiscalisationService.dll
+/Users/tawandagutsa/Downloads/Fiscalisation/obj/Debug/net9.0/FiscalisationService.sourcelink.json

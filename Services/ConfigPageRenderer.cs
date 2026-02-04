@@ -48,7 +48,10 @@ public sealed class ConfigPageRenderer
         AppendSection(sb, "Polling", new[]
         {
             Input("PollIntervalSeconds", "Poll Interval (seconds)", config.PollIntervalSeconds.ToString()),
-            Input("BatchSize", "Batch Size", config.BatchSize.ToString())
+            Input("BatchSize", "Batch Size", config.BatchSize.ToString()),
+            Input("MaxRetries", "Max Retries (timeouts)", config.MaxRetries.ToString()),
+            Input("RetryBackoffBaseSeconds", "Retry Backoff Base (seconds)", config.RetryBackoffBaseSeconds.ToString()),
+            Input("RetryBackoffMaxSeconds", "Retry Backoff Max (seconds)", config.RetryBackoffMaxSeconds.ToString())
         });
 
         AppendSection(sb, "Filtering", new[]
@@ -57,8 +60,17 @@ public sealed class ConfigPageRenderer
             Input("StatusColumn", "Status Column", config.StatusColumn),
             Input("PendingStatusValue", "Pending Status Value", config.PendingStatusValue),
             Input("TimeoutStatusValue", "Timeout Status Value", config.TimeoutStatusValue),
+            Input("InProgressStatusValue", "In-Progress Status Value", config.InProgressStatusValue),
+            Input("FailedStatusValue", "Failed Status Value", config.FailedStatusValue),
             Input("ToFiscaliseColumn", "To Fiscalise Column", config.ToFiscaliseColumn),
             Input("ToFiscaliseValue", "To Fiscalise Value", config.ToFiscaliseValue)
+        });
+
+        AppendSection(sb, "Retry Columns", new[]
+        {
+            Input("RetryCountColumn", "Retry Count Column", config.RetryCountColumn),
+            Input("LastAttemptAtColumn", "Last Attempt At Column", config.LastAttemptAtColumn),
+            Input("LastSuccessAtColumn", "Last Success At Column", config.LastSuccessAtColumn)
         });
 
         AppendSection(sb, "Receipt Defaults", new[]
