@@ -1,0 +1,63 @@
+{
+  "apiUrl": "https://api.example.com/receipts",
+  "connectionString": "",
+  "tableName": "payments2",
+  "whereClause": "",
+  "statusColumn": "FiscalisationStatus",
+  "pendingStatusValue": "PENDING",
+  "toFiscaliseColumn": "ToFiscalise",
+  "toFiscaliseValue": "Yes",
+  "pollIntervalSeconds": 30,
+  "batchSize": 50,
+  "receiptType": 0,
+  "deviceId": "17436",
+  "usdPlatformValue": "VFEX",
+  "usdCurrency": "USD",
+  "defaultCurrency": "ZWG",
+  "buyerDefaults": {
+    "province": "Harare",
+    "city": "Harare",
+    "vatNumber": "000000000",
+    "buyerTin": "0000000000"
+  },
+  "receiptLineDefaults": {
+    "lineType": "Sale",
+    "hsCode": "001",
+    "name": "0.92% Brokerage Fees",
+    "taxPercent": 15.5,
+    "moneyTypeCode": 5
+  },
+  "columns": {
+    "platform": "Platform",
+    "transactionEntry": "TransactionEntry",
+    "clientName": "ClientName",
+    "telephoneNo": "TelephoneNo",
+    "emailAddress": "EmailAddress",
+    "clientAddress": "ClientAddress",
+    "details": "Details",
+    "dealDate": "DealDate",
+    "brokerage": "Brokerage",
+    "amountDue": "AmountDue"
+  },
+  "responseColumns": {
+    "verificationCode": "VerificationCode",
+    "qrUrl": "qrlUrl",
+    "fiscalisationStatus": "FiscalisationStatus",
+    "dReceiptNumber": "dreceiptNumber",
+    "invoiceDate": "invoiceDate",
+    "deviceId": "deviceID"
+  },
+  "emailSettings": {
+    "enabled": false,
+    "smtpHost": "",
+    "smtpPort": 587,
+    "enableSsl": true,
+    "smtpUser": "",
+    "smtpPassword": "",
+    "fromAddress": "",
+    "toAddresses": "",
+    "subject": "Fiscalisation API timeout",
+    "timeoutSeconds": 15,
+    "throttleMinutes": 15
+  }
+}
