@@ -45,12 +45,13 @@ public sealed class FiscalWorker : BackgroundService
                     }
 
                     var status = GetString(record, config.StatusColumn);
-                    var retryCount = GetInt(record, config.RetryCountColumn);
+                    var retryTrackingEnabled = !string.IsNullOrWhiteSpace(config.RetryCountColumn);
+                    var retryCount = retryTrackingEnabled ? GetInt(record, config.RetryCountColumn) : 0;
                     var lastAttemptAt = GetDateTime(record, config.LastAttemptAtColumn);
 
                     if (string.Equals(status, config.TimeoutStatusValue, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (retryCount >= config.MaxRetries)
+                        if (retryTrackingEnabled && retryCount >= config.MaxRetries)
                         {
                             await _repository.UpdateStatusAsync(config, id, config.FailedStatusValue, stoppingToken);
                             await _repository.UpdateFailureAsync(config, id, "Max retries exceeded.", null, stoppingToken);
@@ -58,16 +59,28 @@ public sealed class FiscalWorker : BackgroundService
                             continue;
                         }
 
-                        var delaySeconds = CalculateBackoffSeconds(config, retryCount);
-                        if (lastAttemptAt.HasValue && DateTimeOffset.UtcNow - lastAttemptAt.Value < TimeSpan.FromSeconds(delaySeconds))
+                        if (retryTrackingEnabled)
                         {
-                            continue;
+                            var delaySeconds = CalculateBackoffSeconds(config, retryCount);
+                            if (lastAttemptAt.HasValue && DateTimeOffset.UtcNow - lastAttemptAt.Value < TimeSpan.FromSeconds(delaySeconds))
+                            {
+                                continue;
+                            }
                         }
                     }
 
                     await _repository.MarkInProgressAsync(config, id, stoppingToken);
 
-                    var receipt = BuildReceipt(record, config);
+                    object? clientLookupKey = null;
+                    if (config.ClientLookup.Enabled && !string.IsNullOrWhiteSpace(config.ClientLookup.AccountColumn))
+                    {
+                        record.TryGetValue(config.ClientLookup.AccountColumn, out clientLookupKey);
+                    }
+                    var clientRecord = clientLookupKey is null
+                        ? null
+                        : await _repository.GetClientAsync(config, clientLookupKey, stoppingToken);
+
+                    var receipt = BuildReceipt(record, clientRecord, config);
                     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                     var result = await _apiClient.PostReceiptAsync(config.ApiUrl, receipt, config.EmailSettings.TimeoutSeconds, stoppingToken);
                     stopwatch.Stop();
@@ -77,7 +90,10 @@ public sealed class FiscalWorker : BackgroundService
                         _logger.LogWarning("Fiscalisation API timeout for ID {Id}. Took {Elapsed}ms.", id, stopwatch.ElapsedMilliseconds);
                         await _emailNotifier.NotifyTimeoutAsync(config, null, stoppingToken);
                         await _repository.UpdateTimeoutStatusAsync(config, id, stoppingToken);
-                        await _repository.IncrementRetryAsync(config, id, stoppingToken);
+                        if (retryTrackingEnabled)
+                        {
+                            await _repository.IncrementRetryAsync(config, id, stoppingToken);
+                        }
                         await _repository.UpdateFailureAsync(config, id, result.ErrorMessage ?? "Timeout", result.RawResponse, stoppingToken);
                         _stats.RecordTimeout(result.ErrorMessage ?? "Timeout");
                         continue;
@@ -107,14 +123,14 @@ public sealed class FiscalWorker : BackgroundService
         }
     }
 
-    private static ReceiptDetails BuildReceipt(Dictionary<string, object?> record, ServiceConfig config)
+    private static ReceiptDetails BuildReceipt(Dictionary<string, object?> record, Dictionary<string, object?>? clientRecord, ServiceConfig config)
     {
         var platform = GetString(record, config.Columns.Platform);
         var transactionEntry = GetString(record, config.Columns.TransactionEntry);
-        var clientName = GetString(record, config.Columns.ClientName);
-        var phone = GetString(record, config.Columns.TelephoneNo);
-        var email = GetString(record, config.Columns.EmailAddress);
-        var address = GetString(record, config.Columns.ClientAddress);
+        var clientName = GetString(clientRecord, config.ClientLookup.ClientNameColumn);
+        var phone = GetString(clientRecord, config.ClientLookup.TelephoneNoColumn);
+        var email = GetString(clientRecord, config.ClientLookup.EmailAddressColumn);
+        var address = GetString(clientRecord, config.ClientLookup.ClientAddressColumn);
         var details = GetString(record, config.Columns.Details);
         var dealDate = GetString(record, config.Columns.DealDate);
 
@@ -181,9 +197,14 @@ public sealed class FiscalWorker : BackgroundService
         };
     }
 
-    private static string GetString(Dictionary<string, object?> record, string column)
+    private static string GetString(Dictionary<string, object?>? record, string column)
     {
         if (string.IsNullOrWhiteSpace(column))
+        {
+            return string.Empty;
+        }
+
+        if (record is null)
         {
             return string.Empty;
         }

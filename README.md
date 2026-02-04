@@ -20,6 +20,7 @@ Key settings:
 - `timeoutStatusValue`, `inProgressStatusValue`, `failedStatusValue`: status values used during processing.
 - `retryCountColumn`, `lastAttemptAtColumn`, `lastSuccessAtColumn`: reliability tracking columns.
 - `maxRetries`, `retryBackoffBaseSeconds`, `retryBackoffMaxSeconds`: timeout retry behavior.
+- `clientLookup`: pulls ClientName/Telephone/Email/Address from a client table using the main table `accountColumn`.
 
 ## Run (dev)
 

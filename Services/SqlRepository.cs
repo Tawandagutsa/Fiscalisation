@@ -38,6 +38,47 @@ public sealed class SqlRepository
         return results;
     }
 
+    public async Task<Dictionary<string, object?>?> GetClientAsync(ServiceConfig config, object? accountId, CancellationToken cancellationToken)
+    {
+        if (!config.ClientLookup.Enabled || string.IsNullOrWhiteSpace(config.ConnectionString))
+        {
+            return null;
+        }
+
+        if (accountId is null || string.IsNullOrWhiteSpace(config.ClientLookup.TableName))
+        {
+            return null;
+        }
+
+        var query = $@"SELECT
+    [{config.ClientLookup.ClientNameColumn}],
+    [{config.ClientLookup.TelephoneNoColumn}],
+    [{config.ClientLookup.EmailAddressColumn}],
+    [{config.ClientLookup.ClientAddressColumn}]
+FROM {config.ClientLookup.TableName}
+WHERE [{config.ClientLookup.ClientIdColumn}] = @id";
+
+        await using var connection = new SqlConnection(config.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@id", accountId);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        var record = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < reader.FieldCount; i++)
+        {
+            record[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken) ? null : reader.GetValue(i);
+        }
+
+        return record;
+    }
+
     public async Task UpdateResponseAsync(ServiceConfig config, int id, FiscalResponse response, string? rawResponse, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(config.ConnectionString))

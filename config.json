@@ -1,7 +1,7 @@
 {
   "apiUrl": "https://api.example.com/receipts",
   "connectionString": "",
-  "tableName": "payments2",
+  "tableName": "dbo.payments2",
   "whereClause": "",
   "statusColumn": "FiscalisationStatus",
   "pendingStatusValue": "PENDING",
@@ -39,14 +39,20 @@
   "columns": {
     "platform": "Platform",
     "transactionEntry": "TransactionEntry",
-    "clientName": "ClientName",
-    "telephoneNo": "TelephoneNo",
-    "emailAddress": "EmailAddress",
-    "clientAddress": "ClientAddress",
     "details": "Details",
     "dealDate": "DealDate",
     "brokerage": "Brokerage",
     "amountDue": "AmountDue"
+  },
+  "clientLookup": {
+    "enabled": true,
+    "tableName": "Client",
+    "accountColumn": "Account",
+    "clientIdColumn": "ID",
+    "clientNameColumn": "ClientName",
+    "telephoneNoColumn": "TelephoneNo",
+    "emailAddressColumn": "EmailAddress",
+    "clientAddressColumn": "ClientAddress"
   },
   "responseColumns": {
     "verificationCode": "VerificationCode",

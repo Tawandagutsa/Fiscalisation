@@ -37,6 +37,7 @@ public sealed class ServiceConfig
     public ColumnMappings Columns { get; set; } = new();
     public ResponseColumnMappings ResponseColumns { get; set; } = new();
     public EmailSettings EmailSettings { get; set; } = new();
+    public ClientLookupSettings ClientLookup { get; set; } = new();
 
     public string EffectiveWhereClause()
     {
@@ -105,6 +106,15 @@ public sealed class ServiceConfig
         config.Columns.Brokerage = FormValue(form, "Columns.Brokerage", config.Columns.Brokerage);
         config.Columns.AmountDue = FormValue(form, "Columns.AmountDue", config.Columns.AmountDue);
 
+        config.ClientLookup.Enabled = FormBool(form, "ClientLookup.Enabled", config.ClientLookup.Enabled);
+        config.ClientLookup.TableName = FormValue(form, "ClientLookup.TableName", config.ClientLookup.TableName);
+        config.ClientLookup.AccountColumn = FormValue(form, "ClientLookup.AccountColumn", config.ClientLookup.AccountColumn);
+        config.ClientLookup.ClientIdColumn = FormValue(form, "ClientLookup.ClientIdColumn", config.ClientLookup.ClientIdColumn);
+        config.ClientLookup.ClientNameColumn = FormValue(form, "ClientLookup.ClientNameColumn", config.ClientLookup.ClientNameColumn);
+        config.ClientLookup.TelephoneNoColumn = FormValue(form, "ClientLookup.TelephoneNoColumn", config.ClientLookup.TelephoneNoColumn);
+        config.ClientLookup.EmailAddressColumn = FormValue(form, "ClientLookup.EmailAddressColumn", config.ClientLookup.EmailAddressColumn);
+        config.ClientLookup.ClientAddressColumn = FormValue(form, "ClientLookup.ClientAddressColumn", config.ClientLookup.ClientAddressColumn);
+
         config.ResponseColumns.VerificationCode = FormValue(form, "ResponseColumns.VerificationCode", config.ResponseColumns.VerificationCode);
         config.ResponseColumns.QrUrl = FormValue(form, "ResponseColumns.QrUrl", config.ResponseColumns.QrUrl);
         config.ResponseColumns.FiscalisationStatus = FormValue(form, "ResponseColumns.FiscalisationStatus", config.ResponseColumns.FiscalisationStatus);
@@ -162,7 +172,8 @@ public sealed class ServiceConfig
             ReceiptLineDefaults = ReceiptLineDefaults.Clone(),
             Columns = Columns.Clone(),
             ResponseColumns = ResponseColumns.Clone(),
-            EmailSettings = EmailSettings.Clone()
+            EmailSettings = EmailSettings.Clone(),
+            ClientLookup = ClientLookup.Clone()
         };
     }
 
@@ -289,6 +300,33 @@ public sealed class ResponseColumnMappings
             DeviceId = DeviceId,
             ErrorMessage = ErrorMessage,
             FullResponse = FullResponse
+        };
+    }
+}
+
+public sealed class ClientLookupSettings
+{
+    public bool Enabled { get; set; } = true;
+    public string TableName { get; set; } = "Client";
+    public string AccountColumn { get; set; } = "Account";
+    public string ClientIdColumn { get; set; } = "ID";
+    public string ClientNameColumn { get; set; } = "ClientName";
+    public string TelephoneNoColumn { get; set; } = "TelephoneNo";
+    public string EmailAddressColumn { get; set; } = "EmailAddress";
+    public string ClientAddressColumn { get; set; } = "ClientAddress";
+
+    public ClientLookupSettings Clone()
+    {
+        return new ClientLookupSettings
+        {
+            Enabled = Enabled,
+            TableName = TableName,
+            AccountColumn = AccountColumn,
+            ClientIdColumn = ClientIdColumn,
+            ClientNameColumn = ClientNameColumn,
+            TelephoneNoColumn = TelephoneNoColumn,
+            EmailAddressColumn = EmailAddressColumn,
+            ClientAddressColumn = ClientAddressColumn
         };
     }
 }

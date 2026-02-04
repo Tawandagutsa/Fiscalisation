@@ -16,27 +16,48 @@ public sealed class ConfigPageRenderer
         sb.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
         sb.AppendLine("  <title>Fiscalisation Config</title>");
         sb.AppendLine("  <style>");
-        sb.AppendLine("    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 24px; background: #f7f4ef; color: #222; }");
-        sb.AppendLine("    h1 { margin-bottom: 4px; }");
-        sb.AppendLine("    .hint { color: #555; margin-bottom: 16px; }");
-        sb.AppendLine("    form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }");
-        sb.AppendLine("    fieldset { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 18px; }");
-        sb.AppendLine("    legend { font-weight: 600; padding: 0 8px; }");
-        sb.AppendLine("    label { display: block; margin-bottom: 10px; }");
-        sb.AppendLine("    input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; }");
-        sb.AppendLine("    .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }");
-        sb.AppendLine("    button { background: #1d6b5f; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-size: 16px; }");
-        sb.AppendLine("    .saved { padding: 8px 12px; background: #e7f6ef; border: 1px solid #b4e2cd; border-radius: 8px; margin-bottom: 16px; }");
+        sb.AppendLine("    :root {");
+        sb.AppendLine("      --bg: #f2efe9;");
+        sb.AppendLine("      --card: #ffffff;");
+        sb.AppendLine("      --ink: #1d1f23;");
+        sb.AppendLine("      --muted: #5a616d;");
+        sb.AppendLine("      --accent: #1b6d5a;");
+        sb.AppendLine("      --accent-dark: #135041;");
+        sb.AppendLine("      --border: #e2e1db;");
+        sb.AppendLine("      --shadow: 0 16px 40px rgba(16, 24, 40, 0.12);");
+        sb.AppendLine("    }");
+        sb.AppendLine("    * { box-sizing: border-box; }");
+        sb.AppendLine("    body { margin: 0; font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; color: var(--ink); background: radial-gradient(circle at top, #fff 0%, var(--bg) 55%); }");
+        sb.AppendLine("    header { padding: 28px 24px 10px; }");
+        sb.AppendLine("    h1 { font-family: 'Palatino Linotype', 'Book Antiqua', serif; margin: 0 0 6px; letter-spacing: 0.3px; }");
+        sb.AppendLine("    .hint { color: var(--muted); margin: 0; }");
+        sb.AppendLine("    .shell { max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }");
+        sb.AppendLine("    .card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 22px; }");
+        sb.AppendLine("    form { margin-top: 16px; }");
+        sb.AppendLine("    fieldset { border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin: 16px 0; background: #fff; }");
+        sb.AppendLine("    legend { font-weight: 700; color: var(--accent-dark); padding: 0 10px; font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; }");
+        sb.AppendLine("    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; }");
+        sb.AppendLine("    input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #fbfbf9; font-size: 14px; color: var(--ink); }");
+        sb.AppendLine("    input:focus { outline: 2px solid rgba(27, 109, 90, 0.25); border-color: var(--accent); background: #fff; }");
+        sb.AppendLine("    .row { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }");
+        sb.AppendLine("    .actions { position: sticky; bottom: 16px; display: flex; justify-content: flex-end; padding-top: 8px; }");
+        sb.AppendLine("    button { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 18px rgba(27, 109, 90, 0.22); cursor: pointer; }");
+        sb.AppendLine("    button:hover { background: var(--accent-dark); }");
+        sb.AppendLine("    .saved { padding: 10px 14px; background: #e7f6ef; border: 1px solid #b4e2cd; border-radius: 12px; margin-top: 12px; color: #1e5a48; }");
         sb.AppendLine("  </style>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
-        sb.AppendLine("  <h1>Fiscalisation Service Config</h1>");
-        sb.AppendLine("  <div class=\"hint\">Update settings and click save. Changes apply to the next polling cycle.</div>");
+        sb.AppendLine("  <header class=\"shell\">");
+        sb.AppendLine("    <h1>Fiscalisation Service Config</h1>");
+        sb.AppendLine("    <p class=\"hint\">Update settings and click save. Changes apply to the next polling cycle.</p>");
         if (saved)
         {
-            sb.AppendLine("  <div class=\"saved\">Configuration saved.</div>");
+            sb.AppendLine("    <div class=\"saved\">Configuration saved.</div>");
         }
-        sb.AppendLine("  <form method=\"post\" action=\"/config\">");
+        sb.AppendLine("  </header>");
+        sb.AppendLine("  <div class=\"shell\">");
+        sb.AppendLine("    <div class=\"card\">");
+        sb.AppendLine("      <form method=\"post\" action=\"/config\">");
 
         AppendSection(sb, "Connection", new[]
         {
@@ -103,14 +124,22 @@ public sealed class ConfigPageRenderer
         {
             Input("Columns.Platform", "Platform", config.Columns.Platform),
             Input("Columns.TransactionEntry", "Transaction Entry", config.Columns.TransactionEntry),
-            Input("Columns.ClientName", "Client Name", config.Columns.ClientName),
-            Input("Columns.TelephoneNo", "Telephone No", config.Columns.TelephoneNo),
-            Input("Columns.EmailAddress", "Email Address", config.Columns.EmailAddress),
-            Input("Columns.ClientAddress", "Client Address", config.Columns.ClientAddress),
             Input("Columns.Details", "Details", config.Columns.Details),
             Input("Columns.DealDate", "Deal Date", config.Columns.DealDate),
             Input("Columns.Brokerage", "Brokerage", config.Columns.Brokerage),
             Input("Columns.AmountDue", "Amount Due", config.Columns.AmountDue)
+        });
+
+        AppendSection(sb, "Client Lookup", new[]
+        {
+            Input("ClientLookup.Enabled", "Enabled (true/false)", config.ClientLookup.Enabled.ToString()),
+            Input("ClientLookup.TableName", "Client Table Name", config.ClientLookup.TableName),
+            Input("ClientLookup.AccountColumn", "Main Table Account Column", config.ClientLookup.AccountColumn),
+            Input("ClientLookup.ClientIdColumn", "Client ID Column", config.ClientLookup.ClientIdColumn),
+            Input("ClientLookup.ClientNameColumn", "Client Name Column", config.ClientLookup.ClientNameColumn),
+            Input("ClientLookup.TelephoneNoColumn", "Telephone Column", config.ClientLookup.TelephoneNoColumn),
+            Input("ClientLookup.EmailAddressColumn", "Email Column", config.ClientLookup.EmailAddressColumn),
+            Input("ClientLookup.ClientAddressColumn", "Address Column", config.ClientLookup.ClientAddressColumn)
         });
 
         AppendSection(sb, "Response Column Mappings", new[]
@@ -141,8 +170,12 @@ public sealed class ConfigPageRenderer
             Input("EmailSettings.ThrottleMinutes", "Throttle Minutes", config.EmailSettings.ThrottleMinutes.ToString())
         });
 
-        sb.AppendLine("    <button type=\"submit\">Save Configuration</button>");
-        sb.AppendLine("  </form>");
+        sb.AppendLine("        <div class=\"actions\">");
+        sb.AppendLine("          <button type=\"submit\">Save Configuration</button>");
+        sb.AppendLine("        </div>");
+        sb.AppendLine("      </form>");
+        sb.AppendLine("    </div>");
+        sb.AppendLine("  </div>");
         sb.AppendLine("</body>");
         sb.AppendLine("</html>");
 

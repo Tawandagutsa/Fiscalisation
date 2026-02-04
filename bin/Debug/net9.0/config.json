@@ -1,7 +1,7 @@
 {
   "apiUrl": "https://api.example.com/receipts",
   "connectionString": "",
-  "tableName": "payments2",
+  "tableName": "dbo.payments2",
   "whereClause": "",
   "statusColumn": "FiscalisationStatus",
   "pendingStatusValue": "PENDING",
