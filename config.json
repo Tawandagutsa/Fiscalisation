@@ -1,5 +1,5 @@
 {
-  "apiUrl": "https://api.example.com/receipts",
+  "apiUrl": "http://127.0.0.1:5000/simulate",
   "connectionString": "",
   "tableName": "dbo.payments2",
   "whereClause": "",

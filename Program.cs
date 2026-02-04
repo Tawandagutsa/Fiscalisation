@@ -74,6 +74,21 @@ app.MapGet("/metrics", (ServiceStats stats) =>
     return Results.Text(string.Join(Environment.NewLine, lines), "text/plain");
 });
 
+app.MapPost("/simulate", (ReceiptDetails receipt) =>
+{
+    var response = new FiscalResponse
+    {
+        VerificationCode = $"V-{Guid.NewGuid():N}".Substring(0, 12),
+        QrUrl = $"https://example.local/qr/{Guid.NewGuid():N}",
+        FiscalisationStatus = "SUCCESS",
+        DReceiptNumber = $"DR-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}",
+        InvoiceDate = DateTimeOffset.UtcNow.ToString("O"),
+        DeviceId = receipt.DeviceId
+    };
+
+    return Results.Json(response);
+});
+
 app.MapGet("/config", (HttpRequest request, ConfigStore store, ConfigPageRenderer renderer) =>
 {
     var saved = request.Query.ContainsKey("saved");
