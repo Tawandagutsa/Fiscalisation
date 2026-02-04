@@ -1,0 +1,81 @@
+{
+  "apiUrl": "http://127.0.0.1:5000/simulate",
+  "connectionString": "",
+  "tableName": "dbo.payments2",
+  "whereClause": "",
+  "statusColumn": "FiscalisationStatus",
+  "pendingStatusValue": "PENDING",
+  "timeoutStatusValue": "TIMEOUT",
+  "inProgressStatusValue": "IN_PROGRESS",
+  "failedStatusValue": "FAILED",
+  "toFiscaliseColumn": "ToFiscalise",
+  "toFiscaliseValue": "Yes",
+  "pollIntervalSeconds": 30,
+  "batchSize": 50,
+  "maxRetries": 5,
+  "retryBackoffBaseSeconds": 10,
+  "retryBackoffMaxSeconds": 300,
+  "retryCountColumn": "RetryCount",
+  "lastAttemptAtColumn": "LastAttemptAt",
+  "lastSuccessAtColumn": "LastSuccessAt",
+  "receiptType": 0,
+  "deviceId": "17436",
+  "usdPlatformValue": "VFEX",
+  "usdCurrency": "USD",
+  "defaultCurrency": "ZWG",
+  "buyerDefaults": {
+    "province": "Harare",
+    "city": "Harare",
+    "vatNumber": "000000000",
+    "buyerTin": "0000000000"
+  },
+  "receiptLineDefaults": {
+    "lineType": "Sale",
+    "hsCode": "001",
+    "name": "0.92% Brokerage Fees",
+    "taxPercent": 15.5,
+    "moneyTypeCode": 5
+  },
+  "columns": {
+    "platform": "Platform",
+    "transactionEntry": "TransactionEntry",
+    "details": "Details",
+    "dealDate": "DealDate",
+    "brokerage": "Brokerage",
+    "amountDue": "AmountDue"
+  },
+  "clientLookup": {
+    "enabled": true,
+    "tableName": "Client",
+    "accountColumn": "Account",
+    "clientIdColumn": "ID",
+    "clientNameColumn": "ClientName",
+    "telephoneNoColumn": "TelephoneNo",
+    "emailAddressColumn": "EmailAddress",
+    "clientAddressColumn": "ClientAddress"
+  },
+  "responseColumns": {
+    "verificationCode": "VerificationCode",
+    "qrUrl": "qrlUrl",
+    "fiscalisationStatus": "FiscalisationStatus",
+    "dReceiptNumber": "dreceiptNumber",
+    "invoiceDate": "invoiceDate",
+    "deviceId": "deviceID",
+    "errorMessage": "FiscalisationError",
+    "fullResponse": "FiscalisationResponse"
+  },
+  "emailSettings": {
+    "enabled": false,
+    "smtpHost": "",
+    "smtpPort": 587,
+    "enableSsl": true,
+    "smtpUser": "",
+    "smtpPassword": "",
+    "fromAddress": "",
+    "toAddresses": "",
+    "clientName": "",
+    "subject": "Fiscalisation API timeout",
+    "timeoutSeconds": 15,
+    "throttleMinutes": 15
+  }
+}
